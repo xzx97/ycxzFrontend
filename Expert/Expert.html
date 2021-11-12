@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>test paintCanvas</title>
+		<style>
+			body {
+				position: relative;
+				margin: 0 0;
+				padding: 0 0;
+				width: 100vw;
+				height: 100vh;
+				display: flex;
+				align-items: center;
+				justify-content: center;
+
+				--displayWidth : 800px;
+				--displayHeight : 500px;
+			}
+
+			.utilPanel {
+				position: relative;
+				display: grid;
+				width: 100%;
+				height: 30px;
+				grid-template-columns: repeat(auto-fill, 100px);
+				column-gap: 20px;
+				margin-top: 10px;
+			}
+
+			#subPanel {
+				position: relative;
+				display: flex;
+				width: 80vw;
+			}
+
+			#chatPanel {
+				margin: 10px 0;
+				width: 400px;
+			}
+
+			#displayPanel {
+				position: relative;
+				width: var(--displayWidth);
+				height: var(--displayHeight);
+				background-color: silver;
+				margin: 10px;
+			}
+
+
+			#chatRecord {
+				overflow: hidden;
+				overflow-y: scroll;
+				width: 100%;
+				margin: 0 0;
+				padding: 0 0;
+				height: 50vh;
+
+				background-color: rgb(235, 235, 235);
+				flex: 5;
+
+				display: flex;
+				flex-direction: column;
+			}
+			#chatRecord::-webkit-scrollbar {
+				width: 0;
+			}
+
+			#inputBar {
+				width: 100%;
+				height: 20px;
+				display: flex;
+				margin: 10px 0;
+				align-items: center;
+				/* flex: 1; */
+			}
+
+			#chatInput {
+				border-radius: 5px;
+				height: 100%;
+				width: 80%;
+			}
+
+			#sendBtn {
+				border-radius: 5px;
+				height: 100%;
+				width: 20%;
+				background-color: cornflowerblue;
+			}
+
+			div button {
+				border-radius: 5px;
+			}
+
+			#canvas {
+				position: absolute;
+				top: 0;
+				left: 0;
+				width: 100%;
+				height: 100%;
+				background-color: rgba(255, 255, 255, 0);
+				z-index: 101;
+			}
+
+			#videoCanvas {
+				z-index: 10;
+			}
+
+			#snipCanvas {
+				position: absolute;
+				top: 0;
+				left: 0;
+				background-color: rgba(255, 255, 255, 1);
+				z-index: 100;
+				display: none;
+			}
+
+			#statPanel {
+				position: absolute;
+				top: 0;
+				left: 0;
+				width: 100px;
+				height: 20px;
+				background-color: rgba(255, 255, 255, 0.3);
+				z-index: 150;
+				font-size: 0.8em;
+				/* display: none; */
+			}
+
+
+		</style>
+	</head>
+
+	<body>
+		<script src="../components/ExpertCanvas.js" type="module"></script>
+		<script src="../utils/AgoraRTC_N-4.7.0.js" type="module"></script>
+		<!-- <paint-canvas width="500" height="500"></paint-canvas> -->
+		<div id="mainPanel">
+
+			<div id="subPanel">
+				<div id="displayPanel">
+					<canvas is="expert-canvas" id="videoCanvas"></canvas>
+					<canvas is="expert-canvas" id="canvas"></canvas>
+					<canvas is="expert-canvas" id="snipCanvas"></canvas>
+					<div id="statPanel"></div>
+				</div>
+
+				<div id="chatPanel">
+					<div id="chatRecord"></div>
+					<div id="inputBar">
+						<input id="chatInput"></input>
+						<button id="sendBtn">发送</button>
+					</div>
+				</div>
+
+			</div>
+			<div id="toolPanel" class="utilPanel">
+				<button data-type="arrow">箭头</button>
+				<button data-type="rect">矩形</button>
+				<button data-type="line">线条</button>
+				<button data-type="clear">清除</button>
+			</div>
+			<div id="colorPanel" class="utilPanel">
+				<button data-color="red" style="background-color: red; color: white;">红色</button>
+				<button data-color="blue" style="background-color: blue; color: white">蓝色</button>
+				<button data-color="green" style="background-color: green; color: white;">绿色</button>
+				<button data-color="black" style="background-color: black; color: white;">黑色</button>
+			</div>
+			<div id="snipPanel" class="utilPanel">
+				<button data-event="snip" id="snipBtn">截屏标记</button>
+				<button data-event="cancelSnip" id="cancelSnip">取消截屏</button>
+				<button data-event="sendSnip" id="sendSnip">发送截屏</button>
+			</div>
+
+		</div>
+
+		<!-- <img id="snipImg"/> -->
+
+		<script src="./expertVideo.js" type="module"></script>
+		<script src="./sendShape.js" type="module"></script>
+		<script src="./wss.js" type="module"></script>
+		<script src="snip.js" type="module"></script>
+		<script>
+			import {showToast} from "../utils/toast.js"
+
+			let statPanel = document.getElementById("statPanel");
+			document.addEventListener("rtcStat", (stat) => {
+				statPanel.innerHTML = `在线人数：${stat.detail.UserCount}`;
+			})
+
+			document.addEventListener("exceptionEvt", (exp) => {
+				console.log("接收到异常: ", exp)
+				showToast(exp.detail.msg, 1000);
+			})
+		</script>
+		<script>
+			let canvas = document.getElementById("canvas");
+
+			let toolPanel = document.getElementById("toolPanel");
+			for (let i = 0; i < toolPanel.childElementCount; ++i) {
+				toolPanel.children[i].onclick = function(e) {
+					console.log("触发点击事件");
+					canvas.dispatchEvent(new CustomEvent("drawShape", {detail: this.dataset.type}));
+				}
+			}
+
+			let stroke = document.getElementById("colorPanel");
+			for (let i = 0; i < stroke.childElementCount; ++i) {
+				stroke.children[i].onclick = function(e) {
+					canvas.dispatchEvent(new CustomEvent("strokeStyle", {detail : this.dataset.color}));
+				}
+			}
+
+			let snipCanvas = document.getElementById("snipCanvas");
+			let videoCanvas = document.getElementById("videoCanvas");
+
+			let snipBtn = document.getElementById("snipBtn");
+			snipBtn.onclick = function(e) {
+				console.log("点击截图按钮");
+				// let img = document.getElementById("snipImg");
+				let img = new Image();
+				img.src = videoCanvas.snip();
+				img.height = 500;
+				img.width = 800;
+				snipCanvas.width = 800;
+				snipCanvas.height = 500;
+				img.onload = function() {
+					snipCanvas.ctx.drawImage(img, 0, 0);
+					snipCanvas.style.display = "block"
+					snipCanvas.dispatchEvent(new CustomEvent("snipEvent", {detail: this.dataset.type}));
+					// console.log("加载截图图片", img);
+							// console.log(this.dataset.type);
+				}
+			}
+
+
+
+			snipCanvas.addEventListener("snipEvent", (e) => {
+				console.log("接收到snip Canvas");
+			})
+
+			let cancelSnipBtn = document.getElementById("cancelSnip");
+			cancelSnipBtn.onclick = function(e) {
+				canvas.clear();
+				snipCanvas.clear();
+				snipCanvas.style.display = "none";
+			}
+
+			let sendSnipBtn = document.getElementById("sendSnip");
+			sendSnipBtn.onclick = function(e) {
+				// let snipImg = document.getElementById("snipImg");
+				// let snipMarks = canvas.snip();
+				let img = new Image();
+				let sendImg = new Image();
+				img.src = canvas.snip();
+
+				img.onload = () => {
+					snipCanvas.ctx.drawImage(img, 0, 0);
+					sendImg.src = snipCanvas.snip();
+
+					document.dispatchEvent(new CustomEvent("sendSnipImg", {detail: sendImg.src}));
+					snipCanvas.style.display = "none";
+					snipCanvas.clear();
+					canvas.clear();
+				}
+			}
+
+		</script>
+		<script type="module">
+			import {getWSS} from './wss.js'
+
+			let chatScroll = document.getElementById("chatRecord");
+			let sendBtn = document.getElementById("sendBtn");
+			let chatInput = document.getElementById("chatInput");
+			let wss = new getWSS();
+
+			document.addEventListener("mes", (e) => {
+				console.log("监听到新 mes 消息: ", e);
+				let infoDom = document.createElement('p');
+
+				infoDom.style.backgroundColor = "rgb(175, 215, 237)"
+				infoDom.style.padding = "3px 5px";
+				infoDom.style.width = "auto";
+				infoDom.style.maxWidth = "80%";
+				infoDom.style.border = "1px solid black";
+				infoDom.style.borderRadius = "5px";
+				infoDom.style.wordWrap = "break-word";
+
+				if (e.detail.type === "text") {
+					infoDom.append(e.detail.data);
+				}
+
+				chatScroll.appendChild(infoDom);
+				chatInput.innerText = "";
+				chatScroll.scrollTop = chatScroll.scrollHeight;
+			})
+
+			document.addEventListener("newInfo", function(e){
+				console.log("监听到新消息事件: ", e.detail);
+				let infoDom = document.createElement('p');
+				infoDom.style.backgroundColor = "rgb(175, 215, 237)"
+				infoDom.style.padding = "3px 5px";
+				infoDom.style.width = "auto";
+				infoDom.style.maxWidth = "80%";
+				infoDom.style.border = "1px solid black";
+				infoDom.style.borderRadius = "5px";
+				infoDom.style.wordWrap = "break-word";
+				if (e.detail.from === "self") {
+					infoDom.style.alignSelf = "end"
+				}
+				infoDom.append(e.detail.mes);
+
+				chatScroll.appendChild(infoDom);
+				wss.sendMes(e.detail.mes, e.detail.type);
+				chatScroll.scrollTop = chatScroll.scrollHeight;
+			})
+
+
+						// 聊天消息的格式
+			let chatInfo = {
+				// 消息来自于谁，self / others
+				from : undefined,
+				// 消息类型，text / img
+				type : undefined,
+				// 消息内容
+				mes : undefined,
+			};
+
+			class ChatInfoStack {
+				constructor() {
+					this.info = [];
+				}
+
+				newInfo(mes) {
+					this.info.push(mes);
+					document.dispatchEvent(new CustomEvent("newInfo", {detail:mes}));
+				}
+			}
+
+			let chatRecordStack = new ChatInfoStack();
+
+			sendBtn.onclick = function () {
+				if (chatInput.value != "") {
+					let info = JSON.parse(JSON.stringify(chatInfo));
+					info.from = "self";
+					info.type = "text";
+					info.mes = chatInput.value;
+					chatRecordStack.newInfo(info);
+				}
+			}
+
+			chatInput.onkeyup = function (e) {
+				if(e.keyCode === 13 && chatInput.value != "") {
+					let info = JSON.parse(JSON.stringify(chatInfo));
+					info.from = "self";
+					info.type = "text";
+					info.mes = chatInput.value;
+					chatRecordStack.newInfo(info);
+				}
+			}
+
+
+		</script>
+	</body>
+
+</html>

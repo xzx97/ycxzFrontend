@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="zh">
+	<head>
+		<meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=no">
+		<title>登录界面</title>
+		<link href="./index.css" rel="stylesheet" type="text/css">
+	</head>
+
+	<body>
+		 <div id="login"> 
+			<h1 id="title">Login</h1> 
+			<form method="post">  
+				<input type="text" required="required" placeholder="用户名" name="u" id="account"></input>  
+				<input type="password" required="required" placeholder="密码" name="p" id="password"></input>  
+			</form>  
+			<button class="btn" id="loginBtn" type="submit">登录</button>
+		</div>
+
+		<div id="rolePanel">
+			<button id="expertBtn">远程人员</button>
+			<button id="hostBtn">现场人员</button>
+		</div>
+
+		<div id="joinPanel">
+			<div id="codeTitle">请输入连接码</div>
+			<input type="text" id="inputRoomID" style="height: 60px; width: 80%;"></input>
+			<button id="joinBtn">加入</button>
+		</div>
+
+		<script src="./index.js" type="module"></script>
+		<!-- CSS 调节代码 -->
+		<script src="../utils/adjustCSS.js"></script>
+	</body>
+</html>

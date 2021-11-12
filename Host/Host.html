@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=no">
+		<title>Field Page</title>
+		<style>
+			body {
+				margin: 0;
+				padding: 0;
+				width: 100%;
+				height: 100vh;
+				overflow: hidden;
+				display: flex;
+				flex-direction: column;
+			}
+
+			#displayArea {
+				width: 100%;
+				height: 35%;
+				position: relative;
+			}
+
+			canvas {
+				width: 100%;
+				height: 100%;
+				position: absolute;
+				top: 0;
+				left: 0;
+			}
+
+			#chatPanel {
+				height: 55%;
+				/* height: 400px; */
+				display: flex;
+				flex-direction: column;
+				/* padding-bottom: 30px; */
+				align-items: center;
+			}
+
+			#chatRecord {
+				overflow: hidden;
+				overflow-y: scroll;
+				width: 100%;
+				margin: 0 0;
+				padding: 0 0;
+				height: 60vh;
+
+				background-color: rgb(235, 235, 235);
+				flex: 5;
+
+				display: flex;
+				flex-direction: column;
+			}
+			#chatRecord::-webkit-scrollbar {
+				width: 0;
+			}
+			#roomID {
+				display: flex;
+				align-items: center;
+				justify-content: space-between;
+				width: 100%;
+				height: 30px;
+				font-size: 1em;
+			}
+			#inputBar {
+				width: 80%;
+				height: 40px;
+				display: flex;
+				margin: 10px 0;
+				align-items: center;
+			}
+
+			#chatInput {
+				border-radius: 5px;
+				height: 100%;
+				width: 80%;
+				/* word-wrap: break-word; */
+			}
+
+			#sendBtn {
+				border-radius: 5px;
+				height: 100%;
+				width: 20%;
+				background-color: cornflowerblue;
+			}
+		</style>
+	</head>
+
+	<body>
+		<script src="../components/HostCanvas.js" type="module"></script>
+
+		<div id="displayArea">
+			<canvas is="field-canvas" width="600" height="400" id="canvas" style="background-color: gray;"></canvas>
+		</div>
+
+		<div id="roomID">
+			<span id="linkCode"></span>
+			<span id="userCount"></span>
+			<!-- <button>复制</button> -->
+		</div>
+
+		<video style="display: none;" id="video"></video>
+
+		<div id="chatPanel">
+			<div id="chatRecord"></div>
+			<div id="inputBar">
+				<input id="chatInput"></input>
+				<button id="sendBtn">发送</button>
+			</div>
+		</div>
+
+		<script type="module">
+			import {showToast} from "../utils/toast.js";
+
+			let canvas = document.getElementById("canvas");
+
+			let video = document.getElementById("video");
+			video.width = canvas.width;
+			video.height = canvas.height;
+
+			let linkCode = document.getElementById("linkCode");
+			linkCode.innerHTML = `连接码: ${sessionStorage.roomID}`;
+
+
+			let userCount = document.getElementById("userCount");
+			document.addEventListener("rtcStat", (stats) => {
+				userCount.innerText = `当前用户数: ${stats.detail.UserCount}`;
+			})
+
+			document.addEventListener("exceptionEvt", (exp) => {
+				console.log("接收到异常")
+				showToast(exp.detail.msg, 1000);
+			})
+
+			let mobileConstrains = {
+				video : {
+					facingMode : {exact : "environment"},
+					height : 1280,
+					width : 720,
+				},
+				audio : false,
+			}
+
+			navigator.mediaDevices.getUserMedia(mobileConstrains)
+			.then((stream) => {
+				video.srcObject = stream;
+				video.play();
+
+				let FPS = 30;
+				setInterval(drawVideo, 1000/FPS);
+				// setInterval(print, 1000/FPS);
+				function drawVideo() {
+					canvas.drawVideo(video)
+					canvas.drawShapeArray();
+				}
+			});
+		</script>
+		<script src="./hostVideo.js" type="module"></script>
+		<script src="./wss.js" type="module"></script>
+		<script src="./receiveShape.js" type="module"></script>
+		<script src="./getSnip.js" type="module"></script>
+		<script type="module">
+			import {getWSS} from "./wss.js";
+
+			let chatInput = document.getElementById("chatInput");
+			let sendBtn = document.getElementById("sendBtn");
+			let chatScroll = document.getElementById("chatRecord");
+			let wss = getWSS();
+
+			// 聊天消息的格式
+			let chatInfo = {
+				// 消息来自于谁，self / others
+				from : undefined,
+				// 消息类型，text / img
+				type : undefined,
+				// 消息内容
+				mes : undefined,
+			};
+
+			class ChatInfoStack {
+				constructor() {
+					this.info = [];
+				}
+
+				newInfo(mes) {
+					this.info.push(mes);
+					document.dispatchEvent(new CustomEvent("newInfo", {detail:mes}));
+				}
+			}
+
+			let chatRecordStack = new ChatInfoStack();
+
+			sendBtn.onclick = function () {
+				if (chatInput.value != "") {
+					let info = JSON.parse(JSON.stringify(chatInfo));
+					info.from = "self";
+					info.type = "text";
+					info.mes = chatInput.value;
+					chatRecordStack.newInfo(info);
+
+					showToast(info.mes, 3000);
+				}
+			}
+
+			chatInput.onkeyup = function (e) {
+				if(e.keyCode === 13 && chatInput.value != "") {
+					let info = JSON.parse(JSON.stringify(chatInfo));
+					info.from = "self";
+					info.type = "text";
+					info.mes = chatInput.value;
+					chatRecordStack.newInfo(info);
+				}
+			}
+
+			document.addEventListener("newInfo", function(e){
+				console.log("监听到新消息事件: ", e.detail);
+				let infoDom = document.createElement('p');
+				if (e.detail.from === "self") {
+					infoDom.style.alignSelf = "end"
+					infoDom.style.backgroundColor = "rgb(175, 215, 237)"
+					infoDom.style.padding = "3px 5px";
+					infoDom.style.width = "auto";
+					infoDom.style.maxWidth = "80%";
+					infoDom.style.border = "1px solid black";
+					infoDom.style.borderRadius = "5px";
+					infoDom.style.wordWrap = "break-word";
+				}
+				infoDom.append(e.detail.mes);
+
+				chatScroll.appendChild(infoDom);
+				wss.sendMes(e.detail.mes, e.detail.type);
+				chatInput.value = "";
+				chatScroll.scrollTop = chatScroll.scrollHeight;
+				// chatScroll
+			})
+
+			document.addEventListener("mes", (e) => {
+
+				console.log("document 监听到 mes 消息: " ,e.detail);
+
+				if (e.detail.type === "text") {
+					console.log("监听到 text 消息: " ,e.detail);
+					let infoDom = document.createElement('p');
+					infoDom.style.backgroundColor = "rgb(175, 215, 237)"
+					infoDom.style.padding = "3px 5px";
+					infoDom.style.width = "auto";
+					infoDom.style.maxWidth = "80%";
+					infoDom.style.border = "1px solid black";
+					infoDom.style.borderRadius = "5px";
+					infoDom.style.wordWrap = "break-word";
+					infoDom.append(e.detail.data);
+					chatScroll.appendChild(infoDom);
+					chatScroll.scrollTop = chatScroll.scrollHeight;
+				} else if (e.detail.type === "img") {
+					console.log("监听到 img 消息: " ,e.detail);
+					let imgDom = document.createElement('img');
+					imgDom.src = e.detail.data;
+					imgDom.style.width = "160px";
+					imgDom.style.height = "100px";
+					imgDom.style.margin = "10px";
+					imgDom.onclick = function (e) {
+						console.log("触发 img 点击事件");
+
+						let imgDiv = document.createElement("div");
+						imgDiv.style.width = "100%";
+						imgDiv.style.height = "100%";
+						imgDiv.style.display = "flex";
+						imgDiv.style.position = "absolute";
+						imgDiv.style.top = 0;
+						imgDiv.style.left = 0;
+						imgDiv.style.justifyContent = "center";
+						imgDiv.style.alignItems = "center";
+						imgDiv.style.zIndex = "10001";
+						imgDiv.style.backgroundColor = "rgba(255, 255, 255, 0.5)"
+						imgDiv.onclick = function () {
+							// imgDiv.style.display = "none";
+							imgDiv.remove();
+						}
+
+						let largerImg = document.createElement("img");
+						largerImg.src = imgDom.src;
+						largerImg.style.width = "100%";
+						largerImg.style.height = "auto";
+
+						let mainPanel = document.getElementById("mainPanel");
+
+						document.body.appendChild(imgDiv);
+
+						imgDiv.appendChild(largerImg);
+					}
+					chatScroll.appendChild(imgDom);
+					chatScroll.scrollTop = chatScroll.scrollHeight;
+				}
+			})
+
+		</script>
+	</body>
+</html>

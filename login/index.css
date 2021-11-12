@@ -1,0 +1,176 @@
+/* 默认作为桌面端的 CSS */
+/* js 代码会在登录时检测是否是移动端，然后动态调整布局 */
+
+html{   
+	width: 100%;   
+	height: 100%;   
+	overflow: hidden;   
+	font-style: sans-serif;   
+}   
+
+body{   
+	width: 100%;   
+	height: 100%;   
+	font-family: 'Open Sans',sans-serif;   
+	margin: 0;   
+	background-color: #6ecaffce;   
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}   
+
+#login{   
+	position: absolute;   
+	margin: 0 5px;
+	width: 300px; 
+	height: 300px; 	
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	/* justify-content: center; */
+}   
+
+#login h1{   
+	color: #fff;   
+	text-shadow:0 0 10px;   
+	letter-spacing: 1px;   
+	text-align: center;   
+}   
+
+h1{   
+	font-size: 2em;   
+	margin: 0.67em 0;   
+}   
+
+#login form {
+	display: flex;
+	flex-direction: column;
+	width: 100%;
+	height: 40%;
+
+	align-items: center;
+	justify-content: center;
+}
+
+input{   
+	width: 90%;   
+	height: 20%;   
+	margin-bottom: 10px;   
+	outline: none;   
+	padding: 10px;   
+	font-size: 13px;   
+	color: #fff;   
+	text-shadow:1px 1px 1px;   
+	border-top: 1px solid #312E3D;   
+	border-left: 1px solid #312E3D;   
+	border-right: 1px solid #312E3D;   
+	border-bottom: 1px solid #56536A;   
+	border-radius: 4px;   
+	background-color: #2D2D3F;   
+}   
+
+.btn{   
+	width: 90%;   
+	min-height: 20px;   
+	display: block;   
+	background-color: #4a77d4;   
+	border: 1px solid #3762bc;   
+	letter-spacing: 0.5em;
+	color: #fff;   
+	padding: 9px 14px;   
+	font-size: 15px;   
+	line-height: normal;   
+	border-radius: 5px;   
+	margin: 0;   
+}
+
+#rolePanel {
+	height: 40%;
+	width: 90%;
+	z-index: 998;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	background-color: rgba(255, 255, 255, 0.5);
+	border-radius: 10px;
+	display: none;
+}
+
+#rolePanel button {
+	height: 60px;
+	width: 200px;
+	margin: 0 20px;
+}
+
+text {
+	color: #fff;
+}
+
+#joinPanel {
+	width: 100vw;
+	height: 100vh;
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+	align-items: center;
+	background-color: #4a77d4;   
+	display: none;
+	z-index: 999;
+}
+
+#joinPanel div {
+	color: white;
+	font-size: 4em;
+	letter-spacing: 0.5em;
+	margin: 10px 0;
+}
+
+#inputRoomID {
+	margin-top: 40px;
+	height : 60px;
+	width: 500px;
+	color: black;
+	font-size: 2em;
+	letter-spacing: 0.5em;
+	background-color: white;
+}
+
+#joinBtn {
+	height: 80px;
+	width: 300px;
+	background-color: #6ecaffce;
+	color: white;
+	letter-spacing: 0.5em;
+	font-size: 3em;
+	border: 1px solid #fff;
+	border-radius: 10px;
+}
+
+#callReminder {
+	width: 100vw;
+	height: 100vh;
+	display: flex;
+	position: relative;
+	background-color: rgba(48, 153, 252, 0.712);
+	/* bottom: 20%; */
+	justify-content: space-around;
+	display: none;
+}
+
+#callReminder span {
+	font-size: 8em;
+	width: 100%;
+	text-align: center;
+	letter-spacing: 1em;
+	position: absolute;
+	top: 20%;
+	color: white;
+}
+
+#callReminder div {
+	position: absolute;
+	bottom: 30%;
+	width: 100%;
+	display: flex;
+	justify-content: space-around;
+}
